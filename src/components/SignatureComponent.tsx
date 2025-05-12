@@ -9,6 +9,7 @@ interface SignatureComponentProps {
 
 export function SignatureComponent({ adapter, onCapture }: SignatureComponentProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const sigAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (adapter instanceof CanvasSignatureAdapter && canvasRef.current) {
@@ -28,12 +29,21 @@ export function SignatureComponent({ adapter, onCapture }: SignatureComponentPro
 
   return (
     <div>
-      <canvas
-        ref={canvasRef}
-        width={500}
-        height={200}
-        style={{ border: '1px solid black', background: '#fff' }}
-      />
+      {/* Condicionalmente renderiza canvas ou div para topaz */}
+      <div>
+        <canvas
+          ref={canvasRef}
+          id="signature-canvas"
+          width={500}
+          height={200}
+          style={{ border: '1px solid black', background: '#fff' }}
+        />
+        <div
+          id="sigArea"
+          ref={sigAreaRef}
+          style={{ width: 500, height: 200, border: '1px solid black', background: '#fff' }}
+        ></div>
+      </div>
       <div style={{ marginTop: '10px' }}>
         <button onClick={handleClear}>Limpar</button>
         <button onClick={handleCapture} style={{ marginLeft: '10px' }}>
