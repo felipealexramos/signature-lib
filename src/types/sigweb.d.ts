@@ -1,7 +1,7 @@
 interface External {
   GetSigImageB64(): string;
   ClearTablet(): void;
-  SetTabletState(on: number, target: HTMLElement): void;
+  SetTabletState(on: number, target: HTMLElement | null): void; 
   SetJustifyMode(mode: number): void;
 }
 
