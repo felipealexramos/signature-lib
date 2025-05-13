@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ISignatureAdapter } from '../core/ISignatureAdapter';
 import { CanvasSignatureAdapter } from '../adapters/canvas.adapter';
+import { TopazExtLiteAdapter } from '../adapters/sigPlusExtLite.adapter';
 
 interface SignatureComponentProps {
   adapter: ISignatureAdapter;
@@ -10,40 +11,63 @@ interface SignatureComponentProps {
 export function SignatureComponent({ adapter, onCapture }: SignatureComponentProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sigAreaRef = useRef<HTMLDivElement>(null);
+  const [status, setStatus] = useState('Inicializando...');
 
   useEffect(() => {
     if (adapter instanceof CanvasSignatureAdapter && canvasRef.current) {
       adapter.setCanvas(canvasRef.current);
     }
-    adapter.init();
+
+    adapter
+      .init()
+      .then(() => setStatus('Pronto para assinar'))
+      .catch((err) => setStatus(`Erro: ${err.message || err}`));
+
+    return () => adapter.destroy?.();
   }, [adapter]);
 
   const handleCapture = async () => {
-    const data = await adapter.capture();
-    onCapture?.(data);
+    try {
+      const data = await adapter.capture();
+      setStatus('Assinatura capturada com sucesso!');
+      onCapture?.(data);
+    } catch (err: any) {
+      setStatus(`Erro na captura: ${err.message || err}`);
+    }
   };
 
   const handleClear = () => {
     adapter.clear();
+    setStatus('Assinatura limpa');
   };
+
+  const isCanvas = adapter instanceof CanvasSignatureAdapter;
+  const isTopazExt = adapter instanceof TopazExtLiteAdapter;
 
   return (
     <div>
-      {/* Condicionalmente renderiza canvas ou div para topaz */}
-      <div>
-        <canvas
-          ref={canvasRef}
-          id="signature-canvas"
-          width={500}
-          height={200}
-          style={{ border: '1px solid black', background: '#fff' }}
-        />
-        <div
-          id="sigArea"
-          ref={sigAreaRef}
-          style={{ width: 500, height: 200, border: '1px solid black', background: '#fff' }}
-        ></div>
+      <p><strong>Status:</strong> {status}</p>
+
+      <div style={{ position: 'relative' }}>
+        {isCanvas && (
+          <canvas
+            ref={canvasRef}
+            id="signature-canvas"
+            width={500}
+            height={200}
+            style={{ border: '1px solid black', background: '#fff' }}
+          />
+        )}
+
+        {isTopazExt && (
+          <div
+            id="sigArea"
+            ref={sigAreaRef}
+            style={{ width: 500, height: 200, border: '1px solid black', background: '#fff' }}
+          />
+        )}
       </div>
+
       <div style={{ marginTop: '10px' }}>
         <button onClick={handleClear}>Limpar</button>
         <button onClick={handleCapture} style={{ marginLeft: '10px' }}>
