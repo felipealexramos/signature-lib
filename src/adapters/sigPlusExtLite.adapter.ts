@@ -23,9 +23,10 @@ export class TopazExtLiteAdapter implements ISignatureAdapter {
     }
 
     async init(): Promise<void> {
-        const available = await this.isAvailable();
+        const available = await this.waitForExtension(); 
+
         if (!available) {
-            alert('Extensão SigPlusExtLite não está ativa ou autorizada.');
+            alert('Extensão SigPlusExtLite não está disponível ou ativada para este site.');
             throw new Error('Topaz SigPlusExtLite não disponível.');
         }
 
