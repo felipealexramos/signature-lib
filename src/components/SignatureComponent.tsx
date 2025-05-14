@@ -51,9 +51,9 @@ export function SignatureComponent({ adapter, onCapture }: SignatureComponentPro
         {usesCanvas && (
           <canvas
             ref={canvasRef}
-            id="signature-canvas"
+            id="SigImg" // mesmo ID usado pela demo oficial
             width={500}
-            height={200}
+            height={100}
             style={{ border: '1px solid black', background: '#fff' }}
           />
         )}

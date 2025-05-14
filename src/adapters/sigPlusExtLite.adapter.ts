@@ -35,8 +35,7 @@ export class TopazExtLiteAdapter implements ISignatureAdapter {
         if (!this.canvas) throw new Error("Canvas não encontrado.");
 
         await Topaz.Canvas.Sign.SetTabletState(1);
-        await Topaz.Canvas.Sign.SetJustifyMode(5);
-        await Topaz.Canvas.Sign.ClearTablet(); // essencial!
+        await Topaz.Canvas.Sign.ClearTablet();
         await Topaz.Canvas.Sign.StartSign(this.canvas);
     }
 
