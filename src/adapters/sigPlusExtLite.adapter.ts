@@ -1,66 +1,44 @@
 import { ISignatureAdapter } from "../core/ISignatureAdapter";
 
 export class TopazExtLiteAdapter implements ISignatureAdapter {
-    async waitForExtension(timeout = 3000): Promise<boolean> {
-        const start = Date.now();
+  private canvas?: HTMLCanvasElement;
 
-        return new Promise((resolve) => {
-            const check = () => {
-                if (typeof window.external?.SetTabletState === 'function') {
-                    resolve(true);
-                } else if (Date.now() - start > timeout) {
-                    resolve(false);
-                } else {
-                    setTimeout(check, 100);
-                }
-            };
-            check();
-        });
+  async loadWrapper(): Promise<void> {
+    const url = document.documentElement.getAttribute("SigPlusExtLiteWrapperURL");
+    if (!url) {
+      throw new Error("Extensão SigPlusExtLite não está ativa ou permitida neste site.");
     }
 
-    async isAvailable(): Promise<boolean> {
-        return typeof window.external?.SetTabletState === 'function';
-    }
+    return new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = url;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error("Erro ao carregar o wrapper da extensão Topaz."));
+      document.body.appendChild(script);
+    });
+  }
 
-    async init(): Promise<void> {
-        const available = await this.waitForExtension(); 
+  async init(): Promise<void> {
+    await this.loadWrapper();
 
-        if (!available) {
-            alert('Extensão SigPlusExtLite não está disponível ou ativada para este site.');
-            throw new Error('Topaz SigPlusExtLite não disponível.');
-        }
+    this.canvas = document.getElementById("signature-canvas") as HTMLCanvasElement;
+    if (!this.canvas) throw new Error("Canvas não encontrado.");
 
-        const sigArea = document.getElementById('sigArea');
-        if (!sigArea) throw new Error('Elemento sigArea não encontrado');
+    await Topaz.Canvas.Sign.SetTabletState(1);
+    await Topaz.Canvas.Sign.StartSign(this.canvas);
+  }
 
-        window.external.SetJustifyMode(5);
-        window.external.SetTabletState(1, sigArea);
-    }
+  async capture(): Promise<string> {
+    const base64 = await Topaz.Canvas.Sign.GetSignatureImage();
+    return `data:image/jpeg;base64,${base64}`;
+  }
 
-    async capture(): Promise<string> {
-        return new Promise((resolve, reject) => {
-            try {
-                const base64 = window.external.GetSigImageB64();
-                resolve(`data:image/png;base64,${base64}`);
-            } catch (err) {
-                reject('Erro ao capturar assinatura via SigPlusExtLite');
-            }
-        });
-    }
+  clear(): void {
+    Topaz.Canvas.Sign.ClearSign();
+  }
 
-    clear(): void {
-        try {
-            window.external.ClearTablet();
-        } catch (err) {
-            console.error('Erro ao limpar tablet:', err);
-        }
-    }
-
-    destroy(): void {
-        try {
-            window.external.SetTabletState(0, null);
-        } catch (err) {
-            console.warn('Erro ao encerrar tablet:', err);
-        }
-    }
+  destroy(): void {
+    Topaz.Canvas.Sign.StopSign();
+    Topaz.Canvas.Sign.SetTabletState(0);
+  }
 }

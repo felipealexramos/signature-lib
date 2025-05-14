@@ -13,3 +13,16 @@ interface Window {
   Reset?(): void;
   NumberOfTabletPoints?(): number;
 }
+
+declare namespace Topaz {
+  namespace Canvas {
+    namespace Sign {
+      function SetTabletState(state: number): Promise<void>;
+      function StartSign(canvas: HTMLCanvasElement): Promise<void>;
+      function StopSign(): void;
+      function SetJustifyMode(mode: number): void;
+      function GetSignatureImage(): Promise<string>;
+      function ClearSign(): void;
+    }
+  }
+}
