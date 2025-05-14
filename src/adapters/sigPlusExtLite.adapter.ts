@@ -5,32 +5,27 @@ export class TopazExtLiteAdapter implements ISignatureAdapter {
     private wrapperLoaded = false;
 
     async loadWrapper(): Promise<void> {
+        // Se Topaz já está disponível, não recarrega
         if ((window as any).Topaz) {
-            console.log('[Topaz] Wrapper já presente.');
+            console.log('[Topaz] Wrapper já disponível.');
             return;
         }
 
-        // Aguarda o Topaz ser definido pela extensão por até 3s
-        const waitForTopaz = () => new Promise<void>((resolve, reject) => {
-            const timeout = 3000;
-            const interval = 100;
-            let elapsed = 0;
+        const url = document.documentElement.getAttribute("SigPlusExtLiteWrapperURL");
+        if (!url) {
+            throw new Error("Extensão SigPlusExtLite está ativada, mas o wrapper não foi encontrado.");
+        }
 
-            const check = () => {
-                if ((window as any).Topaz) {
-                    resolve();
-                } else if (elapsed >= timeout) {
-                    reject(new Error('Topaz wrapper não disponível.'));
-                } else {
-                    elapsed += interval;
-                    setTimeout(check, interval);
-                }
+        return new Promise((resolve, reject) => {
+            const script = document.createElement("script");
+            script.src = url;
+            script.onload = () => {
+                console.log('[Topaz] Wrapper carregado com sucesso.');
+                resolve();
             };
-
-            check();
+            script.onerror = () => reject(new Error("Erro ao carregar o wrapper da extensão Topaz."));
+            document.body.appendChild(script);
         });
-
-        await waitForTopaz();
     }
 
     async init(): Promise<void> {
