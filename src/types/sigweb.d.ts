@@ -1,7 +1,7 @@
 interface External {
   GetSigImageB64(): string;
   ClearTablet(): void;
-  SetTabletState(on: number, target: HTMLElement | null): void; 
+  SetTabletState(on: number, target: HTMLElement | null): void;
   SetJustifyMode(mode: number): void;
 }
 
@@ -25,5 +25,22 @@ declare namespace Topaz {
       function ClearSign(): void;
       function ClearTablet(): void;
     }
+  }
+
+  namespace GemView {
+    function PushCurrentTab(): Promise<void>;
+    function RevertCurrentTab(target: number): Promise<void>;
+    function StartCaptureGemViewScreen(
+      render: (imageBase64: string, error?: string) => void,
+      delay?: number,
+      enableRequestAnimationFrame?: boolean
+    ): void;
+    function StopCaptureGemViewScreen(): void;
+    function OpenIdleScreen(duration: number, displayLogo: boolean, displayType: number): void;
+    function CloseIdleScreen(): void;
+    function ModifyIdleScreenLogo(logoBase64: string): void;
+    function ResetIdleScreenLogo(): void;
+    function DownloadIdleScreenImages(urls: string[], orientation: string): number;
+    function SyncIdleScreenImages(): void;
   }
 }
