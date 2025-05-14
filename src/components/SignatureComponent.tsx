@@ -52,35 +52,35 @@ export function SignatureComponent({ adapter, onCapture }: SignatureComponentPro
   const usesCanvas = adapter instanceof CanvasSignatureAdapter;
 
 
-  return (
-    <div>
-      <p><strong>Status:</strong> {status}</p>
+return (
+  <div>
+    <p><strong>Status:</strong> {status}</p>
 
-      <div style={{ position: 'relative' }}>
-        {usesCanvas && (
-          <canvas
-            ref={canvasRef}
-            id="SigImg" // mesmo ID usado pela demo oficial
-            width={500}
-            height={100}
-            style={{ border: '1px solid black', background: '#fff' }}
-          />
-        )}
-      </div>
-
-      if (typeof adapter.start === 'function') {
-        <button onClick={handleStartSign} style={{ marginRight: '10px' }}>
-          Iniciar Assinatura
-        </button>
-      }
-
-
-      <div style={{ marginTop: '10px' }}>
-        <button onClick={handleClear}>Limpar</button>
-        <button onClick={handleCapture} style={{ marginLeft: '10px' }}>
-          Salvar Assinatura
-        </button>
-      </div>
+    <div style={{ position: 'relative' }}>
+      {usesCanvas && (
+        <canvas
+          ref={canvasRef}
+          id="SigImg"
+          width={500}
+          height={100}
+          style={{ border: '1px solid black', background: '#fff' }}
+        />
+      )}
     </div>
-  );
+
+    {typeof adapter.start === 'function' && (
+      <button onClick={handleStartSign} style={{ marginRight: '10px' }}>
+        Iniciar Assinatura
+      </button>
+    )}
+
+    <div style={{ marginTop: '10px' }}>
+      <button onClick={handleClear}>Limpar</button>
+      <button onClick={handleCapture} style={{ marginLeft: '10px' }}>
+        Salvar Assinatura
+      </button>
+    </div>
+  </div>
+);
+
 }
