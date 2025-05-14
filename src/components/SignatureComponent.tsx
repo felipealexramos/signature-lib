@@ -41,29 +41,20 @@ export function SignatureComponent({ adapter, onCapture }: SignatureComponentPro
     setStatus('Assinatura limpa');
   };
 
-  const isCanvas = adapter instanceof CanvasSignatureAdapter;
-  const isTopazExt = adapter instanceof TopazExtLiteAdapter;
+  const usesCanvas = adapter instanceof CanvasSignatureAdapter || adapter instanceof TopazExtLiteAdapter;
 
   return (
     <div>
       <p><strong>Status:</strong> {status}</p>
 
       <div style={{ position: 'relative' }}>
-        {isCanvas && (
+        {usesCanvas && (
           <canvas
             ref={canvasRef}
             id="signature-canvas"
             width={500}
             height={200}
             style={{ border: '1px solid black', background: '#fff' }}
-          />
-        )}
-
-        {isTopazExt && (
-          <div
-            id="sigArea"
-            ref={sigAreaRef}
-            style={{ width: 500, height: 200, border: '1px solid black', background: '#fff' }}
           />
         )}
       </div>
