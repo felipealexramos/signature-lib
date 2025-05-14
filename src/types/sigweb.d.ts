@@ -20,10 +20,8 @@ declare namespace Topaz {
       function SetTabletState(state: number): Promise<void>;
       function StartSign(canvas: HTMLCanvasElement): Promise<void>;
       function StopSign(): void;
-      function SetJustifyMode(mode: number): void;
       function GetSignatureImage(): Promise<string>;
       function ClearSign(): void;
-      function ClearTablet(): void;
     }
   }
 
@@ -38,9 +36,5 @@ declare namespace Topaz {
     function StopCaptureGemViewScreen(): void;
     function OpenIdleScreen(duration: number, displayLogo: boolean, displayType: number): void;
     function CloseIdleScreen(): void;
-    function ModifyIdleScreenLogo(logoBase64: string): void;
-    function ResetIdleScreenLogo(): void;
-    function DownloadIdleScreenImages(urls: string[], orientation: string): number;
-    function SyncIdleScreenImages(): void;
   }
 }

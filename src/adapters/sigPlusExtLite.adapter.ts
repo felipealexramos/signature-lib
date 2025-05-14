@@ -43,11 +43,12 @@ export class TopazExtLiteAdapter implements ISignatureAdapter {
   }
 
   destroy(): void {
-    Topaz.Canvas.Sign.StopSign?.();
-    Topaz.Canvas.Sign.SetTabletState?.(0);
-    Topaz.GemView.RevertCurrentTab?.(1);
+    const TopazGlobal = (window as any).Topaz;
+    const sign = TopazGlobal?.Canvas?.Sign;
+    const gem = TopazGlobal?.GemView;
+
+    sign?.StopSign?.();
+    sign?.SetTabletState?.(0);
+    gem?.RevertCurrentTab?.(1);
   }
 }
-
-
-
