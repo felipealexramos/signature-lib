@@ -31,7 +31,7 @@ export class TopazExtLiteAdapter implements ISignatureAdapter {
     async init(): Promise<void> {
         await this.loadWrapper();
 
-        this.canvas = document.getElementById("signature-canvas") as HTMLCanvasElement;
+        this.canvas = document.getElementById("SigImg") as HTMLCanvasElement;
         if (!this.canvas) throw new Error("Canvas não encontrado.");
 
         await Topaz.Canvas.Sign.SetTabletState(1);
