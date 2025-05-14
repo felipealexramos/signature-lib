@@ -68,11 +68,11 @@ export function SignatureComponent({ adapter, onCapture }: SignatureComponentPro
         )}
       </div>
 
-      {typeof adapter.start === 'function' && (
+      if (typeof adapter.start === 'function') {
         <button onClick={handleStartSign} style={{ marginRight: '10px' }}>
           Iniciar Assinatura
         </button>
-      )}
+      }
 
 
       <div style={{ marginTop: '10px' }}>
