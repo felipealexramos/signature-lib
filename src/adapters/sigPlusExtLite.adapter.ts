@@ -5,28 +5,36 @@ export class TopazExtLiteAdapter implements ISignatureAdapter {
     private wrapperLoaded = false;
 
     async loadWrapper(): Promise<void> {
-        if (typeof Topaz !== 'undefined') {
-            console.log('[Topaz] Wrapper já carregado.');
+        if ((window as any).Topaz) {
+            console.log('[Topaz] Wrapper já presente.');
             return;
         }
 
-        const url = document.documentElement.getAttribute("SigPlusExtLiteWrapperURL");
-        if (!url) {
-            throw new Error("Extensão SigPlusExtLite não está ativa ou permitida neste site.");
-        }
+        // Aguarda o Topaz ser definido pela extensão por até 3s
+        const waitForTopaz = () => new Promise<void>((resolve, reject) => {
+            const timeout = 3000;
+            const interval = 100;
+            let elapsed = 0;
 
-        return new Promise((resolve, reject) => {
-            const script = document.createElement("script");
-            script.src = url;
-            script.onload = () => resolve();
-            script.onerror = () => reject(new Error("Erro ao carregar o wrapper da extensão Topaz."));
-            document.body.appendChild(script);
+            const check = () => {
+                if ((window as any).Topaz) {
+                    resolve();
+                } else if (elapsed >= timeout) {
+                    reject(new Error('Topaz wrapper não disponível.'));
+                } else {
+                    elapsed += interval;
+                    setTimeout(check, interval);
+                }
+            };
+
+            check();
         });
+
+        await waitForTopaz();
     }
 
     async init(): Promise<void> {
         await this.loadWrapper();
-
         this.canvas = document.getElementById("signature-canvas") as HTMLCanvasElement;
         if (!this.canvas) throw new Error("Canvas não encontrado.");
 
