@@ -23,6 +23,7 @@ declare namespace Topaz {
       function SetJustifyMode(mode: number): void;
       function GetSignatureImage(): Promise<string>;
       function ClearSign(): void;
+      function ClearTablet(): void;
     }
   }
 }
