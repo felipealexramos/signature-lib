@@ -1,9 +1,9 @@
 import { ISignatureAdapter } from "../core/ISignatureAdapter";
 
 export class TopazExtLiteAdapter implements ISignatureAdapter {
-  private canvas?: HTMLCanvasElement;
+  private wrapperLoaded = false;
 
-  async loadWrapper(): Promise<void> {
+  private async loadWrapper(): Promise<void> {
     if ((window as any).Topaz) return;
 
     const url = document.documentElement.getAttribute("SigPlusExtLiteWrapperURL");
@@ -13,7 +13,7 @@ export class TopazExtLiteAdapter implements ISignatureAdapter {
       const script = document.createElement("script");
       script.src = url;
       script.onload = () => resolve();
-      script.onerror = () => reject(new Error("Erro ao carregar wrapper da extensão."));
+      script.onerror = () => reject(new Error("Erro ao carregar o wrapper da extensão."));
       document.body.appendChild(script);
     });
   }
@@ -21,34 +21,43 @@ export class TopazExtLiteAdapter implements ISignatureAdapter {
   async init(): Promise<void> {
     await this.loadWrapper();
 
-    this.canvas = document.getElementById("SigImg") as HTMLCanvasElement;
-    if (!this.canvas) throw new Error("Canvas não encontrado.");
+    const status = await Topaz.Global.GetDeviceStatus();
+    if (status !== 2) {
+      throw new Error("Dispositivo GemView não detectado.");
+    }
 
-    await Topaz.GemView.PushCurrentTab();
-    await Topaz.Canvas.Sign.SetTabletState(1);
-    await Topaz.Canvas.Sign.ClearSign();
+    // Configuração da janela
+    const custom = Topaz.SignatureCaptureWindow.CustomWindow;
+    custom.SetSigningWindowState(0); // Normal
+    custom.SetSigningWindowSize(785, 340); // Ajuste para GemView 7
+    custom.SetSigningWindowLocation(0, 0); // posição
+    custom.SetSigningAreaSize(785, 240);
+    custom.SetSigningAreaDock(0); // None
+    custom.Save();
   }
 
   async start(): Promise<void> {
-    if (!this.canvas) throw new Error("Canvas não disponível.");
-    await Topaz.Canvas.Sign.StartSign(this.canvas);
+    // Mostra janela de assinatura
+    await Topaz.SignatureCaptureWindow.Sign.StartSign(false);
   }
 
   async capture(): Promise<string> {
-    return `data:image/jpeg;base64,${await Topaz.Canvas.Sign.GetSignatureImage()}`;
+    const isSigned = await Topaz.SignatureCaptureWindow.Sign.IsSigned();
+    if (!isSigned) {
+      throw new Error("Nenhuma assinatura capturada.");
+    }
+
+    const base64 = await Topaz.SignatureCaptureWindow.Sign.GetSignatureImage();
+    await Topaz.SignatureCaptureWindow.Sign.SignComplete();
+
+    return `data:image/jpeg;base64,${base64}`;
   }
 
   clear(): void {
-    Topaz.Canvas.Sign.ClearSign?.();
+    // Nada a fazer aqui, pois a janela nativa tem o botão “Clear”
   }
 
   destroy(): void {
-    const TopazGlobal = (window as any).Topaz;
-    const sign = TopazGlobal?.Canvas?.Sign;
-    const gem = TopazGlobal?.GemView;
-
-    sign?.StopSign?.();
-    sign?.SetTabletState?.(0);
-    gem?.RevertCurrentTab?.(1);
+    // Não há recursos a destruir neste modo
   }
 }

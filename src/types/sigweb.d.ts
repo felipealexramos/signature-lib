@@ -1,20 +1,9 @@
-interface External {
-  GetSigImageB64(): string;
-  ClearTablet(): void;
-  SetTabletState(on: number, target: HTMLElement | null): void;
-  SetJustifyMode(mode: number): void;
-}
-
-interface Window {
-  SetTabletState(state: number, ctxOrTimer?: CanvasRenderingContext2D | any, delay?: number): any;
-  GetSigImageB64(callback: (base64: string) => void): void;
-  SetJustifyMode?(mode: number): void;
-  ClearTablet?(): void;
-  Reset?(): void;
-  NumberOfTabletPoints?(): number;
-}
-
 declare namespace Topaz {
+    namespace Global {
+    function Connect(): Promise<number>;
+    function Disconnect(): void;
+    function GetDeviceStatus(): Promise<number>; // 0 = offline, 2 = online
+  }
   namespace Canvas {
     namespace Sign {
       function SetTabletState(state: number): Promise<void>;
@@ -36,5 +25,24 @@ declare namespace Topaz {
     function StopCaptureGemViewScreen(): void;
     function OpenIdleScreen(duration: number, displayLogo: boolean, displayType: number): void;
     function CloseIdleScreen(): void;
+  }
+
+  namespace SignatureCaptureWindow {
+    namespace CustomWindow {
+      function SetSigningWindowState(state: number): void;
+      function SetSigningWindowSize(width: number, height: number): void;
+      function SetSigningWindowLocation(x: number, y: number): void;
+      function SetSigningAreaSize(width: number, height: number): void;
+      function SetSigningAreaDock(dock: number): void;
+      function Save(): void;
+    }
+
+    namespace Sign {
+      function StartSign(showInNewWindow: boolean): Promise<void>;
+      function GetSignatureImage(): Promise<string>;
+      function IsSigned(): Promise<boolean>;
+      function SignComplete(): Promise<void>;
+      function StopSign(): void;
+    }
   }
 }

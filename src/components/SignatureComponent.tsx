@@ -49,7 +49,8 @@ export function SignatureComponent({ adapter, onCapture }: SignatureComponentPro
     setStatus('Assinatura limpa');
   };
 
-  const usesCanvas = adapter instanceof CanvasSignatureAdapter || adapter instanceof TopazExtLiteAdapter;
+  const usesCanvas = adapter instanceof CanvasSignatureAdapter;
+
 
   return (
     <div>
@@ -67,9 +68,11 @@ export function SignatureComponent({ adapter, onCapture }: SignatureComponentPro
         )}
       </div>
 
-      <button onClick={handleStartSign} style={{ marginRight: '10px' }}>
-        Iniciar Assinatura
-      </button>
+      {typeof adapter.start === 'function' && (
+        <button onClick={handleStartSign} style={{ marginRight: '10px' }}>
+          Iniciar Assinatura
+        </button>
+      )}
 
 
       <div style={{ marginTop: '10px' }}>
