@@ -3,26 +3,12 @@ import { ISignatureAdapter } from "../core/ISignatureAdapter";
 export class TopazExtLiteAdapter implements ISignatureAdapter {
     private wrapperLoaded = false;
 
-    private async loadWrapper(): Promise<void> {
-        if ((window as any).Topaz) return;
-
-        const url = document.documentElement.getAttribute("SigPlusExtLiteWrapperURL");
-        if (!url) throw new Error("Wrapper da extensão não encontrado.");
-
-        await new Promise<void>((resolve, reject) => {
-            const script = document.createElement("script");
-            script.src = url;
-            script.onload = () => resolve();
-            script.onerror = () => reject(new Error("Erro ao carregar o wrapper da extensão."));
-            document.body.appendChild(script);
-        });
-    }
-
     private async waitForTopaz(timeout = 3000): Promise<void> {
         const interval = 100;
         let waited = 0;
+
         while (!(window as any).Topaz) {
-            if (waited >= timeout) throw new Error("Objeto Topaz não carregado.");
+            if (waited >= timeout) throw new Error("Wrapper Topaz não carregado pela extensão.");
             await new Promise((r) => setTimeout(r, interval));
             waited += interval;
         }
@@ -30,7 +16,6 @@ export class TopazExtLiteAdapter implements ISignatureAdapter {
 
 
     async init(): Promise<void> {
-        await this.loadWrapper();
         await this.waitForTopaz();
 
         await Topaz.Global.Connect();
@@ -38,11 +23,11 @@ export class TopazExtLiteAdapter implements ISignatureAdapter {
         if (status !== 2) throw new Error("Dispositivo GemView não detectado.");
 
         const custom = Topaz.SignatureCaptureWindow.CustomWindow;
-        custom.SetSigningWindowState(0); // Normal
+        custom.SetSigningWindowState(0);
         custom.SetSigningWindowSize(785, 340);
         custom.SetSigningWindowLocation(0, 0);
         custom.SetSigningAreaSize(785, 240);
-        custom.SetSigningAreaDock(0); // None
+        custom.SetSigningAreaDock(0);
         custom.Save();
     }
 

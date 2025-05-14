@@ -1,6 +1,6 @@
 {
   "name": "@felipealexandre/signature-lib",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "A pluggable signature library with support for canvas, Topaz devices, and more.",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
