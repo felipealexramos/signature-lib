@@ -1,61 +1,59 @@
 import { ISignatureAdapter } from "../core/ISignatureAdapter";
 
 export class TopazExtLiteAdapter implements ISignatureAdapter {
-    private canvas?: HTMLCanvasElement;
-    private wrapperLoaded = false;
+  private canvas?: HTMLCanvasElement;
 
-    async loadWrapper(): Promise<void> {
-        // Se Topaz já está disponível, não recarrega
-        if ((window as any).Topaz) {
-            console.log('[Topaz] Wrapper já disponível.');
-            return;
-        }
-
-        const url = document.documentElement.getAttribute("SigPlusExtLiteWrapperURL");
-        if (!url) {
-            throw new Error("Extensão SigPlusExtLite está ativada, mas o wrapper não foi encontrado.");
-        }
-
-        return new Promise((resolve, reject) => {
-            const script = document.createElement("script");
-            script.src = url;
-            script.onload = () => {
-                console.log('[Topaz] Wrapper carregado com sucesso.');
-                resolve();
-            };
-            script.onerror = () => reject(new Error("Erro ao carregar o wrapper da extensão Topaz."));
-            document.body.appendChild(script);
-        });
+  async loadWrapper(): Promise<void> {
+    if ((window as any).Topaz) {
+      console.log('[Topaz] Wrapper já disponível.');
+      return;
     }
 
-    async init(): Promise<void> {
-        await this.loadWrapper();
+    const url = document.documentElement.getAttribute("SigPlusExtLiteWrapperURL");
+    if (!url) throw new Error("Wrapper da extensão não encontrado.");
 
-        this.canvas = document.getElementById("signature-canvas") as HTMLCanvasElement;
-        if (!this.canvas) throw new Error("Canvas não encontrado.");
+    return new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = url;
+      script.onload = () => {
+        console.log('[Topaz] Wrapper carregado.');
+        resolve();
+      };
+      script.onerror = () => reject(new Error("Erro ao carregar wrapper da extensão."));
+      document.body.appendChild(script);
+    });
+  }
 
-        await Topaz.Canvas.Sign.SetTabletState(1);
-        await Topaz.Canvas.Sign.ClearSign(); // ← aqui a correção
-        await Topaz.Canvas.Sign.StartSign(this.canvas);
-    }
+  async init(): Promise<void> {
+    await this.loadWrapper();
 
-    async capture(): Promise<string> {
-        const base64 = await Topaz.Canvas.Sign.GetSignatureImage();
-        return `data:image/jpeg;base64,${base64}`;
-    }
+    const canvasEl = document.getElementById("SigImg") as HTMLCanvasElement;
+    if (!canvasEl) throw new Error("Canvas não encontrado.");
+    this.canvas = canvasEl;
 
-    clear(): void {
-        if (typeof Topaz !== 'undefined') {
-            Topaz.Canvas.Sign.ClearSign();
-        }
-    }
+    const sign = (window as any).Topaz.Canvas.Sign;
 
+    await sign.SetTabletState(1); // ativa a captura
+    await sign.ClearSign(); // limpa canvas
+    await sign.StartSign(this.canvas); // inicia captura no canvas
+  }
 
-    destroy(): void {
-        if (typeof Topaz !== 'undefined') {
-            Topaz.Canvas.Sign.StopSign();
-            Topaz.Canvas.Sign.SetTabletState(0);
-        }
-    }
+  async capture(): Promise<string> {
+    const sign = (window as any).Topaz.Canvas.Sign;
+    const base64 = await sign.GetSignatureImage();
+    return `data:image/jpeg;base64,${base64}`;
+  }
+
+  clear(): void {
+    const sign = (window as any).Topaz.Canvas.Sign;
+    sign.ClearSign?.();
+  }
+
+  destroy(): void {
+    const sign = (window as any).Topaz.Canvas.Sign;
+    sign.StopSign?.();
+    sign.SetTabletState?.(0);
+  }
 }
+
 
