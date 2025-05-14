@@ -1,3 +1,12 @@
+interface Window {
+  SetTabletState?: (state: number, target?: any, delay?: number) => any;
+  GetSigImageB64?: ((callback: (base64: string) => void) => void) | (() => string);
+  ClearTablet?: () => void;
+  SetJustifyMode?: (mode: number) => void;
+  Reset?: () => void;
+}
+
+
 declare namespace Topaz {
     namespace Global {
     function Connect(): Promise<number>;
