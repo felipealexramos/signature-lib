@@ -26,6 +26,14 @@ export function SignatureComponent({ adapter, onCapture }: SignatureComponentPro
     return () => adapter.destroy?.();
   }, [adapter]);
 
+  const handleStartSign = async () => {
+    if ('StartSign' in adapter && typeof adapter['start'] === 'function') {
+      await adapter['start'](); // chama o método extra
+      setStatus('Assinatura ativada. Use a caneta.');
+    }
+  };
+
+
   const handleCapture = async () => {
     try {
       const data = await adapter.capture();
@@ -58,6 +66,11 @@ export function SignatureComponent({ adapter, onCapture }: SignatureComponentPro
           />
         )}
       </div>
+
+      <button onClick={handleStartSign} style={{ marginRight: '10px' }}>
+        Iniciar Assinatura
+      </button>
+
 
       <div style={{ marginTop: '10px' }}>
         <button onClick={handleClear}>Limpar</button>

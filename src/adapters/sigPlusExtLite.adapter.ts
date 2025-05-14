@@ -3,6 +3,11 @@ import { ISignatureAdapter } from "../core/ISignatureAdapter";
 export class TopazExtLiteAdapter implements ISignatureAdapter {
     private canvas?: HTMLCanvasElement;
 
+    async start(): Promise<void> {
+        if (!this.canvas) return;
+        await Topaz.Canvas.Sign.StartSign(this.canvas);
+    }
+
     async loadWrapper(): Promise<void> {
         if ((window as any).Topaz) {
             console.log('[Topaz] Wrapper já disponível.');
@@ -26,16 +31,12 @@ export class TopazExtLiteAdapter implements ISignatureAdapter {
 
     async init(): Promise<void> {
         await this.loadWrapper();
+        this.canvas = document.getElementById("SigImg") as HTMLCanvasElement;
+        if (!this.canvas) throw new Error("Canvas não encontrado.");
 
-        const canvasEl = document.getElementById("SigImg") as HTMLCanvasElement;
-        if (!canvasEl) throw new Error("Canvas não encontrado.");
-        this.canvas = canvasEl;
-
-        const sign = (window as any).Topaz.Canvas.Sign;
-
-        await sign.SetTabletState(1); // ativa a captura
-        await sign.ClearSign(); // limpa canvas
-        await sign.StartSign(this.canvas); // inicia captura no canvas
+        await Topaz.Canvas.Sign.SetTabletState(1);
+        await Topaz.Canvas.Sign.ClearSign();
+        // await Topaz.Canvas.Sign.StartSign(this.canvas);
     }
 
     async capture(): Promise<string> {

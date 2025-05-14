@@ -4,4 +4,5 @@ export interface ISignatureAdapter {
   clear(): void;
   destroy?(): void;
   isAvailable?(): Promise<boolean>;
+  start?(): Promise<void>; // Método extra para iniciar a assinatura
 }
