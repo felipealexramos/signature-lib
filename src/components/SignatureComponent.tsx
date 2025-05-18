@@ -3,9 +3,10 @@ import { ISignatureAdapter } from '../core/ISignatureAdapter';
 
 interface SignatureComponentProps {
   adapter: ISignatureAdapter;
+  onCapture?: (base64: string) => void;
 }
 
-export const SignatureComponent: React.FC<SignatureComponentProps> = ({ adapter }) => {
+export const SignatureComponent: React.FC<SignatureComponentProps> = ({ adapter, onCapture }) => {
   const [ready, setReady] = useState(false);
   const [image, setImage] = useState<string | null>(null);
   const [sigData, setSigData] = useState<string | null>(null);
@@ -29,12 +30,17 @@ export const SignatureComponent: React.FC<SignatureComponentProps> = ({ adapter 
       setError(null);
       await adapter.startCapture();
       await new Promise((r) => setTimeout(r, 5000)); // simular tempo de captura
+
       const image = await adapter.getSignatureImage();
       const data = await adapter.getSignatureData();
       await adapter.completeCapture();
 
       setImage(image);
       setSigData(data);
+
+      if (onCapture) {
+        onCapture(image); // <-- agora com valor correto
+      }
     } catch (err: any) {
       setError(err.message || 'Erro na captura.');
     }
