@@ -1,59 +1,51 @@
-import { ISignatureAdapter } from "../core/ISignatureAdapter";
+import { ISignatureAdapter } from '../core/ISignatureAdapter';
 
-export class TopazExtLiteAdapter implements ISignatureAdapter {
-    private wrapperLoaded = false;
+export class SigPlusExtLiteAdapter implements ISignatureAdapter {
+  private Topaz: any;
 
-    private async waitForTopaz(timeout = 3000): Promise<void> {
-        const interval = 100;
-        let waited = 0;
+  async isReady(): Promise<boolean> {
+    const wrapperURL = document.documentElement.getAttribute('SigPlusExtLiteWrapperURL');
+    if (!wrapperURL) return false;
 
-        while (!(window as any).Topaz) {
-            if (waited >= timeout) throw new Error("Wrapper Topaz não carregado pela extensão.");
-            await new Promise((r) => setTimeout(r, interval));
-            waited += interval;
-        }
+    if (!(window as any).Topaz) {
+      await new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = wrapperURL;
+        script.async = true;
+        script.onload = () => resolve(true);
+        document.body.appendChild(script);
+      });
     }
 
+    this.Topaz = (window as any).Topaz;
+    const status = await this.Topaz?.Global?.GetDeviceStatus?.();
+    return status === 2;
+  }
 
-    async init(): Promise<void> {
-        await this.waitForTopaz();
+  async startCapture(): Promise<void> {
+    const gemView = this.Topaz.GemView;
+    const signWindow = this.Topaz.SignatureCaptureWindow.Sign;
+    const customWindow = this.Topaz.SignatureCaptureWindow.CustomWindow;
 
-        await Topaz.Global.Connect();
-        const status = await Topaz.Global.GetDeviceStatus();
-        if (status !== 2) throw new Error("Dispositivo GemView não detectado.");
+    await gemView.PushCurrentTab();
 
-        const custom = Topaz.SignatureCaptureWindow.CustomWindow;
-        custom.SetSigningWindowState(0);
-        custom.SetSigningWindowSize(785, 340);
-        custom.SetSigningWindowLocation(0, 0);
-        custom.SetSigningAreaSize(785, 240);
-        custom.SetSigningAreaDock(0);
-        custom.Save();
-    }
+    await customWindow.SetSigningWindowTitle('Assinatura Digital');
+    await customWindow.SetSigningWindowSize(800, 400);
+    await customWindow.Save();
 
+    await signWindow.StartSign(false, 1, 0, '');
+  }
 
-    async start(): Promise<void> {
-        // Mostra janela de assinatura
-        await Topaz.SignatureCaptureWindow.Sign.StartSign(false);
-    }
+  async getSignatureImage(): Promise<string> {
+    return await this.Topaz.SignatureCaptureWindow.Sign.GetSignatureImage();
+  }
 
-    async capture(): Promise<string> {
-        const isSigned = await Topaz.SignatureCaptureWindow.Sign.IsSigned();
-        if (!isSigned) {
-            throw new Error("Nenhuma assinatura capturada.");
-        }
+  async getSignatureData(): Promise<string> {
+    return await this.Topaz.SignatureCaptureWindow.Sign.GetSigString();
+  }
 
-        const base64 = await Topaz.SignatureCaptureWindow.Sign.GetSignatureImage();
-        await Topaz.SignatureCaptureWindow.Sign.SignComplete();
-
-        return `data:image/jpeg;base64,${base64}`;
-    }
-
-    clear(): void {
-        // Nada a fazer aqui, pois a janela nativa tem o botão “Clear”
-    }
-
-    destroy(): void {
-        // Não há recursos a destruir neste modo
-    }
+  async completeCapture(): Promise<void> {
+    await this.Topaz.SignatureCaptureWindow.Sign.SignComplete();
+    await this.Topaz.GemView.RevertCurrentTab(1);
+  }
 }

@@ -1,86 +1,61 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ISignatureAdapter } from '../core/ISignatureAdapter';
-import { CanvasSignatureAdapter } from '../adapters/canvas.adapter';
-import { TopazExtLiteAdapter } from '../adapters/sigPlusExtLite.adapter';
 
 interface SignatureComponentProps {
   adapter: ISignatureAdapter;
-  onCapture?: (base64: string) => void;
 }
 
-export function SignatureComponent({ adapter, onCapture }: SignatureComponentProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const sigAreaRef = useRef<HTMLDivElement>(null);
-  const [status, setStatus] = useState('Inicializando...');
+export const SignatureComponent: React.FC<SignatureComponentProps> = ({ adapter }) => {
+  const [ready, setReady] = useState(false);
+  const [image, setImage] = useState<string | null>(null);
+  const [sigData, setSigData] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (adapter instanceof CanvasSignatureAdapter && canvasRef.current) {
-      adapter.setCanvas(canvasRef.current);
-    }
-
-    adapter
-      .init()
-      .then(() => setStatus('Pronto para assinar'))
-      .catch((err) => setStatus(`Erro: ${err.message || err}`));
-
-    return () => adapter.destroy?.();
+    const checkReady = async () => {
+      try {
+        const isAvailable = await adapter.isReady();
+        setReady(isAvailable);
+        if (!isAvailable) setError('Dispositivo não está pronto.');
+      } catch (err) {
+        setError('Erro ao verificar disponibilidade do dispositivo.');
+      }
+    };
+    checkReady();
   }, [adapter]);
-
-  const handleStartSign = async () => {
-    if ('StartSign' in adapter && typeof adapter['start'] === 'function') {
-      await adapter['start'](); // chama o método extra
-      setStatus('Assinatura ativada. Use a caneta.');
-    }
-  };
-
 
   const handleCapture = async () => {
     try {
-      const data = await adapter.capture();
-      setStatus('Assinatura capturada com sucesso!');
-      onCapture?.(data);
+      setError(null);
+      await adapter.startCapture();
+      await new Promise((r) => setTimeout(r, 5000)); // simular tempo de captura
+      const image = await adapter.getSignatureImage();
+      const data = await adapter.getSignatureData();
+      await adapter.completeCapture();
+
+      setImage(image);
+      setSigData(data);
     } catch (err: any) {
-      setStatus(`Erro na captura: ${err.message || err}`);
+      setError(err.message || 'Erro na captura.');
     }
   };
 
-  const handleClear = () => {
-    adapter.clear();
-    setStatus('Assinatura limpa');
-  };
+  return (
+    <div>
+      <h2>Assinatura Digital</h2>
+      {!ready && <p>Inicializando...</p>}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      <button onClick={handleCapture} disabled={!ready}>
+        Capturar Assinatura
+      </button>
 
-  const usesCanvas = adapter instanceof CanvasSignatureAdapter;
-
-
-return (
-  <div>
-    <p><strong>Status:</strong> {status}</p>
-
-    <div style={{ position: 'relative' }}>
-      {usesCanvas && (
-        <canvas
-          ref={canvasRef}
-          id="SigImg"
-          width={500}
-          height={100}
-          style={{ border: '1px solid black', background: '#fff' }}
-        />
+      {image && (
+        <div>
+          <h4>Assinatura:</h4>
+          <img src={`data:image/jpeg;base64,${image}`} alt="Assinatura" />
+          <textarea rows={3} value={sigData || ''} readOnly style={{ width: '100%' }} />
+        </div>
       )}
     </div>
-
-    {typeof adapter.start === 'function' && (
-      <button onClick={handleStartSign} style={{ marginRight: '10px' }}>
-        Iniciar Assinatura
-      </button>
-    )}
-
-    <div style={{ marginTop: '10px' }}>
-      <button onClick={handleClear}>Limpar</button>
-      <button onClick={handleCapture} style={{ marginLeft: '10px' }}>
-        Salvar Assinatura
-      </button>
-    </div>
-  </div>
-);
-
-}
+  );
+};
