@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ISignatureAdapter } from '../core/ISignatureAdapter';
 import { SignaturePreview } from './SignaturePreview';
+import '../styles/signature.css'; // ⬅️ Importa o CSS
 
 interface SignatureComponentProps {
   adapter: ISignatureAdapter;
@@ -32,7 +33,7 @@ export const SignatureComponent: React.FC<SignatureComponentProps> = ({ adapter,
       setError(null);
       setLoading(true);
       await adapter.startCapture();
-      await new Promise((r) => setTimeout(r, 3000)); // simula tempo de captura
+      await new Promise((r) => setTimeout(r, 5000));
       const image = await adapter.getSignatureImage();
       const data = await adapter.getSignatureData();
       await adapter.completeCapture();
@@ -48,21 +49,17 @@ export const SignatureComponent: React.FC<SignatureComponentProps> = ({ adapter,
   };
 
   return (
-    <div>
+    <div className="signature-container">
       <h2>Assinatura Digital</h2>
 
       {!ready && <p>Inicializando...</p>}
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
-      <button onClick={handleCapture} disabled={!ready || loading}>
+      <button className="signature-button" onClick={handleCapture} disabled={!ready || loading}>
         {loading ? 'Capturando...' : 'Capturar Assinatura'}
       </button>
 
-      {loading && (
-        <div style={{ marginTop: 12 }}>
-          <span role="status">⏳ Aguardando assinatura...</span>
-        </div>
-      )}
+      {loading && <div className="signature-spinner">⏳ Aguardando assinatura...</div>}
 
       {image && <SignaturePreview image={image} sigData={sigData ?? undefined} />}
     </div>
