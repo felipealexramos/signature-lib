@@ -59,7 +59,7 @@ export const SignatureComponent: React.FC<SignatureComponentProps> = ({ adapter,
         {loading ? 'Capturando...' : 'Capturar Assinatura'}
       </button>
 
-      {loading && <div className="signature-spinner">⏳ Aguardando assinatura...</div>}
+      {loading && <div className="signature-spinner">Aguardando assinatura...</div>}
 
       {image && <SignaturePreview image={image} sigData={sigData ?? undefined} />}
     </div>
