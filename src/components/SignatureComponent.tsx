@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ISignatureAdapter } from '../core/ISignatureAdapter';
+import { SignaturePreview } from './SignaturePreview';
 
 interface SignatureComponentProps {
   adapter: ISignatureAdapter;
@@ -8,6 +9,7 @@ interface SignatureComponentProps {
 
 export const SignatureComponent: React.FC<SignatureComponentProps> = ({ adapter, onCapture }) => {
   const [ready, setReady] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [image, setImage] = useState<string | null>(null);
   const [sigData, setSigData] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -28,40 +30,41 @@ export const SignatureComponent: React.FC<SignatureComponentProps> = ({ adapter,
   const handleCapture = async () => {
     try {
       setError(null);
+      setLoading(true);
       await adapter.startCapture();
-      await new Promise((r) => setTimeout(r, 5000)); // simular tempo de captura
-
+      await new Promise((r) => setTimeout(r, 3000)); // simula tempo de captura
       const image = await adapter.getSignatureImage();
       const data = await adapter.getSignatureData();
       await adapter.completeCapture();
 
       setImage(image);
       setSigData(data);
-
-      if (onCapture) {
-        onCapture(image); // <-- agora com valor correto
-      }
+      onCapture?.(image);
     } catch (err: any) {
       setError(err.message || 'Erro na captura.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div>
       <h2>Assinatura Digital</h2>
+
       {!ready && <p>Inicializando...</p>}
       {error && <p style={{ color: 'red' }}>{error}</p>}
-      <button onClick={handleCapture} disabled={!ready}>
-        Capturar Assinatura
+
+      <button onClick={handleCapture} disabled={!ready || loading}>
+        {loading ? 'Capturando...' : 'Capturar Assinatura'}
       </button>
 
-      {image && (
-        <div>
-          <h4>Assinatura:</h4>
-          <img src={`data:image/jpeg;base64,${image}`} alt="Assinatura" />
-          <textarea rows={3} value={sigData || ''} readOnly style={{ width: '100%' }} />
+      {loading && (
+        <div style={{ marginTop: 12 }}>
+          <span role="status">⏳ Aguardando assinatura...</span>
         </div>
       )}
+
+      {image && <SignaturePreview image={image} sigData={sigData ?? undefined} />}
     </div>
   );
 };
