@@ -27,39 +27,28 @@ export class TopazUniversalAdapter implements ISignatureAdapter {
   };
 
   async isReady(): Promise<boolean> {
-    // Aguarda até 3 segundos pelo iframe
-    let waited = 0;
-    while (waited < 3000) {
+    return new Promise((resolve) => {
       const iframe = document.getElementById('signature-iframe') as HTMLIFrameElement;
-      if (iframe && iframe.contentWindow) {
-        this.iframeWindow = iframe.contentWindow;
-        this.mode = 'extLite';
-        return true;
-      }
-      await new Promise(res => setTimeout(res, 100));
-      waited += 100;
-    }
-    // Detecta Biblioteca JS
-    if ((window as any).Topaz) {
-      this.mode = 'sigLite';
-      return true;
-    }
-    // Tenta carregar biblioteca JS se wrapperURL estiver presente
-    const wrapperURL = document.documentElement.getAttribute('SigPlusExtLiteWrapperURL');
-    if (wrapperURL) {
-      await new Promise((resolve) => {
-        const script = document.createElement('script');
-        script.src = wrapperURL;
-        script.async = true;
-        script.onload = () => resolve(true);
-        document.body.appendChild(script);
-      });
-      if ((window as any).Topaz) {
-        this.mode = 'sigLite';
-        return true;
-      }
-    }
-    return false;
+      if (!iframe || !iframe.contentWindow) return resolve(false);
+
+      this.iframeWindow = iframe.contentWindow;
+
+      const timeout = setTimeout(() => {
+        window.removeEventListener('message', handler);
+        resolve(false);
+      }, 3000);
+
+      const handler = (event: MessageEvent) => {
+        if (event.data?.type === 'TOPAZ_IFRAME_READY') {
+          clearTimeout(timeout);
+          window.removeEventListener('message', handler);
+          this.mode = 'extLite';
+          resolve(true);
+        }
+      };
+
+      window.addEventListener('message', handler);
+    });
   }
 
   async startCapture(): Promise<void> {
