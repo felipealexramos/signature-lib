@@ -7,17 +7,19 @@ export class TopazUniversalAdapter implements ISignatureAdapter {
   private signatureImage: string | null = null;
   private signatureData: string | null = null;
 
-  private signResponseHandler = (event: any) => {
-    const str = event.target.getAttribute("msgAttribute") || event.target.getAttribute("msg-Attribute");
-    const response = JSON.parse(str);
-    if (response?.isSigned) {
-      this.signatureImage = response.imgData;
-      this.signatureData = response.sigData || '';
-      this._resolve?.();
-    } else {
-      this._reject?.(new Error(response.errorMsg || 'Assinatura não capturada'));
-    }
-  };
+private signResponseHandler = (event: any) => {
+  console.log('SignResponse event received', event);
+  const str = event.target.getAttribute("msgAttribute") || event.target.getAttribute("msg-Attribute");
+  console.log('msgAttribute:', str);
+  const response = JSON.parse(str);
+  if (response?.isSigned) {
+    this.signatureImage = response.imgData;
+    this.signatureData = response.sigData || '';
+    this._resolve?.();
+  } else {
+    this._reject?.(new Error(response.errorMsg || 'Assinatura não capturada'));
+  }
+};
 
   private _resolve?: () => void;
   private _reject?: (err: any) => void;
@@ -100,6 +102,9 @@ export class TopazUniversalAdapter implements ISignatureAdapter {
 
   async getSignatureImage(): Promise<string> {
     if (this.mode === 'extLite') {
+      console.log('signatureImage', this.signatureImage);
+      console.log('signatureData', this.signatureData);
+      console.log('Mode', this.mode);
       if (!this.signatureImage) throw new Error('Assinatura não capturada');
       return `data:image/png;base64,${this.signatureImage}`;
     } else if (this.mode === 'sigLite') {
