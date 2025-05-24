@@ -32,8 +32,7 @@ export const SignatureComponent: React.FC<SignatureComponentProps> = ({ adapter,
     try {
       setError(null);
       setLoading(true);
-      await adapter.startCapture();
-      await new Promise((r) => setTimeout(r, 5000));
+      await adapter.startCapture(); // Aguarda a assinatura ser capturada
       const image = await adapter.getSignatureImage();
       const data = await adapter.getSignatureData();
       await adapter.completeCapture();
