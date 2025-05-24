@@ -27,12 +27,17 @@ export class TopazUniversalAdapter implements ISignatureAdapter {
   };
 
   async isReady(): Promise<boolean> {
-    // Detecta Extensão no iframe
-    const iframe = document.getElementById('signature-iframe') as HTMLIFrameElement;
-    if (iframe && iframe.contentWindow) {
-      this.iframeWindow = iframe.contentWindow;
-      this.mode = 'extLite';
-      return true;
+    // Aguarda até 3 segundos pelo iframe
+    let waited = 0;
+    while (waited < 3000) {
+      const iframe = document.getElementById('signature-iframe') as HTMLIFrameElement;
+      if (iframe && iframe.contentWindow) {
+        this.iframeWindow = iframe.contentWindow;
+        this.mode = 'extLite';
+        return true;
+      }
+      await new Promise(res => setTimeout(res, 100));
+      waited += 100;
     }
     // Detecta Biblioteca JS
     if ((window as any).Topaz) {
@@ -78,11 +83,11 @@ export class TopazUniversalAdapter implements ISignatureAdapter {
                 imageY: 100,
                 penThickness: '2',
                 penColor: '#000000',
-          encryptionMode: '0',
-          encryptionKey: '',
-          sigCompressionMode: 1,
-          customWindow: false
-       }
+                encryptionMode: '0',
+                encryptionKey: '',
+                sigCompressionMode: 1,
+                customWindow: false
+              }
             },
             '*'
           );
