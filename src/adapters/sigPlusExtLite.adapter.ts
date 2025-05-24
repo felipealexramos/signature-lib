@@ -48,6 +48,9 @@ export class TopazUniversalAdapter implements ISignatureAdapter {
       };
 
       window.addEventListener('message', handler);
+
+      // Envia um ping para o iframe responder
+      this.iframeWindow.postMessage({ type: 'TOPAZ_PING' }, '*');
     });
   }
 
