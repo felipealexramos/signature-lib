@@ -12,9 +12,11 @@ private signResponseHandler = (event: any) => {
   const str = event.target.getAttribute("msgAttribute") || event.target.getAttribute("msg-Attribute");
   console.log('msgAttribute:', str);
   const response = JSON.parse(str);
-  if (response?.isSigned) {
-    this.signatureImage = response.imgData;
-    this.signatureData = response.sigData || '';
+  // Corrige aqui: aceita tanto imgData quanto imageData
+  const image = response.imgData || response.imageData;
+  if (response?.isSigned && image) {
+    this.signatureImage = image;
+    this.signatureData = response.sigData || response.signatureData || '';
     this._resolve?.();
   } else {
     this._reject?.(new Error(response.errorMsg || 'Assinatura não capturada'));
