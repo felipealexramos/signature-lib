@@ -6,29 +6,31 @@ export class TopazUniversalAdapter implements ISignatureAdapter {
   private mode: Mode = null;
   private signatureImage: string | null = null;
   private signatureData: string | null = null;
-
-private signResponseHandler = (event: any) => {
-  console.log('SignResponse event received', event);
-  const str = event.target.getAttribute("msgAttribute") || event.target.getAttribute("msg-Attribute");
-  console.log('msgAttribute:', str);
-  const response = JSON.parse(str);
-  // Corrige aqui: aceita tanto imgData quanto imageData
-  const image = response.imgData || response.imageData;
-  if (response?.isSigned && image) {
-    this.signatureImage = image;
-    this.signatureData = response.sigData || response.signatureData || '';
-    this._resolve?.();
-  } else {
-    this._reject?.(new Error(response.errorMsg || 'Assinatura não capturada'));
-  }
-};
-
   private _resolve?: () => void;
   private _reject?: (err: any) => void;
+  private iframeWindow: Window | null = null;
+
+  // Novo: handler para postMessage
+  private postMessageHandler = (event: MessageEvent) => {
+    // Você pode validar a origem aqui se quiser mais segurança
+    if (!event.data || event.data.type !== 'TOPAZ_SIGNATURE_RESULT') return;
+
+    const response = event.data.payload;
+    if (response?.isSigned && response.imageData) {
+      this.signatureImage = response.imageData;
+      this.signatureData = response.sigData || response.signatureData || '';
+      this._resolve?.();
+    } else {
+      this._reject?.(new Error(response?.errorMsg || 'Assinatura não capturada'));
+    }
+    window.removeEventListener('message', this.postMessageHandler);
+  };
 
   async isReady(): Promise<boolean> {
-    // Detecta Extensão
-    if (document.documentElement.getAttribute('SigPlusExtLiteExtension-installed')) {
+    // Detecta Extensão no iframe
+    const iframe = document.getElementById('signature-iframe') as HTMLIFrameElement;
+    if (iframe && iframe.contentWindow) {
+      this.iframeWindow = iframe.contentWindow;
       this.mode = 'extLite';
       return true;
     }
@@ -62,40 +64,38 @@ private signResponseHandler = (event: any) => {
         this._reject = reject;
         this.signatureImage = null;
         this.signatureData = null;
-        top?.document.addEventListener('SignResponse', this.signResponseHandler, { once: true });
+        window.addEventListener('message', this.postMessageHandler);
 
-        const message = {
-          metadata: { version: 1.0, command: 'SignatureCapture' },
-          imageFormat: 2,
-          imageX: 300,
-          imageY: 100,
-          imageTransparency: true,
-          imageScaling: false,
-          maxUpScalePercent: 0,
-          rawDataFormat: 'ENC',
-          minSigPoints: 25,
-          penThickness: '2',
-          penColor: '#000000',
+        // Envia mensagem para o iframe iniciar a captura
+        if (this.iframeWindow) {
+          this.iframeWindow.postMessage(
+            {
+              type: 'TOPAZ_SIGNATURE_REQUEST',
+              payload: {
+                // Parâmetros de captura, se necessário
+                imageFormat: 2,
+                imageX: 300,
+                imageY: 100,
+                penThickness: '2',
+                penColor: '#000000',
           encryptionMode: '0',
           encryptionKey: '',
           sigCompressionMode: 1,
           customWindow: false
-        };
-        const messageData = JSON.stringify(message);
-        const element = document.createElement("MyExtensionDataElement");
-        element.setAttribute("messageAttribute", messageData);
-        document.documentElement.appendChild(element);
-
-        const evt = document.createEvent("Events");
-        evt.initEvent("SignStartEvent", true, false);
-        element.dispatchEvent(evt);
+       }
+            },
+            '*'
+          );
+        } else {
+          window.removeEventListener('message', this.postMessageHandler);
+          reject(new Error('Janela de assinatura não encontrada'));
+        }
       });
     } else if (this.mode === 'sigLite') {
       const Topaz = (window as any).Topaz;
       Topaz.SetTabletState(1);
       Topaz.SetJustifyMode(0);
       Topaz.ClearTablet();
-      // Aguarda usuário assinar (pode-se adicionar lógica de timeout se desejar)
       await new Promise((r) => setTimeout(r, 5000));
     } else {
       throw new Error('Nenhum modo de captura disponível');
@@ -104,9 +104,6 @@ private signResponseHandler = (event: any) => {
 
   async getSignatureImage(): Promise<string> {
     if (this.mode === 'extLite') {
-      console.log('signatureImage', this.signatureImage);
-      console.log('signatureData', this.signatureData);
-      console.log('Mode', this.mode);
       if (!this.signatureImage) throw new Error('Assinatura não capturada');
       return `data:image/png;base64,${this.signatureImage}`;
     } else if (this.mode === 'sigLite') {
