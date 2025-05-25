@@ -26,46 +26,59 @@ export class TopazUniversalAdapter implements ISignatureAdapter {
     window.removeEventListener('message', this.postMessageHandler);
   };
 
-async isReady(): Promise<boolean> {
-  return new Promise((resolve) => {
+  async isReady(): Promise<boolean> {
+    // 1. tenta modo extLite
     const iframe = document.getElementById('signature-iframe') as HTMLIFrameElement;
-    if (!iframe || !iframe.contentWindow) return resolve(false);
+    if (iframe && iframe.contentWindow) {
+      this.iframeWindow = iframe.contentWindow;
+      let resolved = false;
+      return new Promise((resolve) => {
+        const handler = (event: MessageEvent) => {
+          if (event.data?.type === 'TOPAZ_IFRAME_READY') {
+            resolved = true;
+            clearTimeout(timeout);
+            window.removeEventListener('message', handler);
+            this.mode = 'extLite';
+            resolve(true);
+          }
+        };
+        window.addEventListener('message', handler);
+        this.iframeWindow!.postMessage({ type: 'TOPAZ_PING' }, '*');
 
-    this.iframeWindow = iframe.contentWindow;
-
-    let resolved = false;
-
-    const handler = (event: MessageEvent) => {
-      if (event.data?.type === 'TOPAZ_IFRAME_READY') {
-        if (!resolved) {
-          resolved = true;
-          clearTimeout(timeout);
+        const timeout = setTimeout(async () => {
           window.removeEventListener('message', handler);
-          this.mode = 'extLite';
-          resolve(true);
-        }
-      }
-    };
+          if (!resolved) {
+            // 2. fallback para sigLite
+            let waited = 0;
+            while (!(window as any).Topaz && waited < 2000) {
+              await new Promise((r) => setTimeout(r, 100));
+              waited += 100;
+            }
+            if ((window as any).Topaz) {
+              this.mode = 'sigLite';
+              resolve(true);
+            } else {
+              resolve(false);
+            }
+          }
+        }, 1000);
+      });
+    }
 
-    window.addEventListener('message', handler);
+    // 3. tenta sigLite direto se não houver iframe
+    let waited = 0;
+    while (!(window as any).Topaz && waited < 2000) {
+      await new Promise((r) => setTimeout(r, 100));
+      waited += 100;
+    }
 
-    // Envia um ping para o iframe responder
-    this.iframeWindow.postMessage({ type: 'TOPAZ_PING' }, '*');
-    // Opcional: envia outro ping após 200ms para garantir
-    setTimeout(() => {
-      if (!resolved) this.iframeWindow?.postMessage({ type: 'TOPAZ_PING' }, '*');
-    }, 200);
+    if ((window as any).Topaz) {
+      this.mode = 'sigLite';
+      return true;
+    }
 
-    const timeout = setTimeout(() => {
-      if (!resolved) {
-        resolved = true;
-        window.removeEventListener('message', handler);
-        resolve(false);
-      }
-    }, 3000);
-  });
-}
-
+    return false;
+  }
   async startCapture(): Promise<void> {
     if (this.mode === 'extLite') {
       return new Promise<void>((resolve, reject) => {
