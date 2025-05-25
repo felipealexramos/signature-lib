@@ -26,33 +26,45 @@ export class TopazUniversalAdapter implements ISignatureAdapter {
     window.removeEventListener('message', this.postMessageHandler);
   };
 
-  async isReady(): Promise<boolean> {
-    return new Promise((resolve) => {
-      const iframe = document.getElementById('signature-iframe') as HTMLIFrameElement;
-      if (!iframe || !iframe.contentWindow) return resolve(false);
+async isReady(): Promise<boolean> {
+  return new Promise((resolve) => {
+    const iframe = document.getElementById('signature-iframe') as HTMLIFrameElement;
+    if (!iframe || !iframe.contentWindow) return resolve(false);
 
-      this.iframeWindow = iframe.contentWindow;
+    this.iframeWindow = iframe.contentWindow;
 
-      const timeout = setTimeout(() => {
-        window.removeEventListener('message', handler);
-        resolve(false);
-      }, 3000);
+    let resolved = false;
 
-      const handler = (event: MessageEvent) => {
-        if (event.data?.type === 'TOPAZ_IFRAME_READY') {
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type === 'TOPAZ_IFRAME_READY') {
+        if (!resolved) {
+          resolved = true;
           clearTimeout(timeout);
           window.removeEventListener('message', handler);
           this.mode = 'extLite';
           resolve(true);
         }
-      };
+      }
+    };
 
-      window.addEventListener('message', handler);
+    window.addEventListener('message', handler);
 
-      // Envia um ping para o iframe responder
-      this.iframeWindow.postMessage({ type: 'TOPAZ_PING' }, '*');
-    });
-  }
+    // Envia um ping para o iframe responder
+    this.iframeWindow.postMessage({ type: 'TOPAZ_PING' }, '*');
+    // Opcional: envia outro ping após 200ms para garantir
+    setTimeout(() => {
+      if (!resolved) this.iframeWindow?.postMessage({ type: 'TOPAZ_PING' }, '*');
+    }, 200);
+
+    const timeout = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        window.removeEventListener('message', handler);
+        resolve(false);
+      }
+    }, 3000);
+  });
+}
 
   async startCapture(): Promise<void> {
     if (this.mode === 'extLite') {
